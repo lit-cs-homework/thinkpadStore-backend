@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -63,13 +63,16 @@ class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
+    def original_total_price(self):
+        return self.quantity * self.product.price
+
     def total_price(self):
-        now = datetime.now()
+        now = datetime.now() #TODO: check if timezone is correct
         dis = DiscountPromotion.objects.filter(
             start_date__gte=now,
             end_date__lte=now,
         )
-        res = self.quantity * self.product.price
+        res = self.original_total_price()
         if dis is not None:
             for d in dis:
                 res = res * d.rate()

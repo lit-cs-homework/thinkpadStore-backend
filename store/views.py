@@ -1,10 +1,11 @@
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, viewsets
-from .models import User, Product, Cart, product_images_url
-from .serializers import UserSerializer, ProductSerializer, CartSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from .models import User, Product, CartItem, product_images_url
+from .serializers import UserSerializer, ProductSerializer, CartSerializer, CartItemSerializer
 
 
 # 用户注册
@@ -16,8 +17,8 @@ class RegisterView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# 商品视图
-class ProductViewSet(viewsets.ModelViewSet):
+# 商品视图, readonly for users
+class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
@@ -26,8 +27,8 @@ class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
 
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user)
-
+        return CartItem.objects.filter(cart__user=self.request.user.pk)
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
