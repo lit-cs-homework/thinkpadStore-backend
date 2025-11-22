@@ -8,6 +8,14 @@ from django.db import models
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     is_vip = models.BooleanField(default=False)
+    def save(self, *args, **kwargs):
+        is_new = not self.pk
+        res = super().save(*args, **kwargs)
+        if is_new:
+            # if new user
+            Cart.objects.create(user=self)
+        return res
+    # no need to override delete(), as CASCADING will handle Cart deletion
 
 product_images_url = 'product_images/'
 
