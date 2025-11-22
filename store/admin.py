@@ -2,8 +2,6 @@ from django.contrib import admin
 from .models import User, Product, Cart, DiscountPromotion
 from .models import CartItem
 
-#admin.site.register(User)
-#admin.site.register(Product)
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     search_fields = ['email', 'username']  # Enable search by email and username

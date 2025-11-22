@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-# 用户模型
+
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     is_vip = models.BooleanField(default=False)
@@ -19,7 +19,7 @@ class User(AbstractUser):
 
 product_images_url = 'product_images/'
 
-# 商品模型
+
 class Product(models.Model):
     name = models.CharField(max_length=255)
     model = models.CharField(max_length=100)
@@ -53,7 +53,6 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
 
-# 购物车模型
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
@@ -65,7 +64,7 @@ class Cart(models.Model):
     def __str__(self):
         return f"Cart of {self.user.username}"
 
-# 购物车项模型
+
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='cart_items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -125,7 +124,7 @@ class Promotion(models.Model):
     end_date = models.DateTimeField()
 
 class DiscountPromotion(Promotion):
-    '打折; discount 8 表示八折'
+    'discount 8 means 20% off, i.e., pay 80%'
     discount = models.SmallIntegerField()
     def rate(self):
         return 1.0 - self.discount / 10.0

@@ -1,6 +1,6 @@
 from django.conf import settings
 #from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+#from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, exceptions
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User, Product, CartItem, Cart, product_images_url
@@ -8,7 +8,6 @@ from .serializers import UserSerializer, ProductSerializer, CartItemSerializer
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-# 用户注册
 class UserView(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     def get_queryset(self):
@@ -25,12 +24,12 @@ class UserView(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(pk=user.pk)
 
-# 商品视图, readonly for users
+# readonly for users
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
-# 购物车视图
+
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
 
@@ -40,7 +39,7 @@ class CartViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(cart=Cart.objects.get(user=self.request.user))
 
-# JWT 登录视图
+
 class LoginView(TokenObtainPairView):
     #XXX: workaround for drf-yasg not generating response schema for TokenObtainPairView
     @swagger_auto_schema(

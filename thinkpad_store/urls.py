@@ -20,7 +20,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -50,7 +50,7 @@ urlpatterns = [
     path('login/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include(router.urls)),
 ] + [
-    # drf-yasg 自动生成 OpenAPI JSON 和 UI
+    # drf-yasg auto-generate OpenAPI JSON and UI
     path('swagger.yaml', schema_view.without_ui(cache_timeout=DOC_CACHE_TIMEOUT), name='schema-yaml'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=DOC_CACHE_TIMEOUT), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=DOC_CACHE_TIMEOUT), name='schema-redoc'),
