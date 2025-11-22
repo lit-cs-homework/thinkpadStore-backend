@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.text import slugify
 
 
 class User(AbstractUser):
@@ -19,6 +20,16 @@ class User(AbstractUser):
 
 product_images_url = 'product_images/'
 
+def product_image_upload_path(instance, filename):
+    """
+    Generate a unique file path for the product image based on the product's name and model.
+    """
+    _, file_extension = os.path.splitext(filename)
+    # Use slugify to create a safe filename
+    safe_name = slugify(instance.name)
+    safe_model = slugify(instance.model)
+    return product_images_url + f"{safe_name}_{safe_model}{file_extension}"
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -26,31 +37,24 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()
     stock = models.PositiveIntegerField()
-    image = models.FileField(upload_to=product_images_url)
+    image = models.FileField(upload_to=product_image_upload_path)
+
+    class Meta:
+        unique_together = ('name', 'model')
 
     def __str__(self):
         return self.name
-    
 
-    @staticmethod
-    def _try_purge_image_file(image):
-        if image:
-            # Delete the image file from the filesystem
-            image_path = os.path.join(settings.MEDIA_ROOT, image.name)
-            if os.path.isfile(image_path):
-                os.remove(image_path)
+
     # Override the delete method to remove the image file
     def delete(self, *args, **kwargs):
-        Product._try_purge_image_file(self.image)
+        self.image.delete(save=False) # if `save` this line, recsursive loop
+        # this will also `save`
         super().delete(*args, **kwargs)
 
-    # Override the save method to delete the old image file when updating
-    def save(self, *args, **kwargs):
-        if self.pk:  # Check if the object already exists in the database
-            old_product = Product.objects.filter(pk=self.pk).first()
-            if old_product is not None and old_product.image != self.image:
-                Product._try_purge_image_file(old_product.image)
-        super().save(*args, **kwargs)
+    # no need to override the save method to delete the old image file when updating
+    #  as with `product_image_upload_path` and `unique_together`,
+    #  the old image file will be overwritten
 
 
 class Cart(models.Model):
