@@ -1,38 +1,29 @@
 from django.conf import settings
-from rest_framework.views import APIView
-from rest_framework.response import Response
+#from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status, viewsets
+from rest_framework import viewsets, exceptions
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User, Product, CartItem, Cart, product_images_url
-from .serializers import UserSerializer, ProductSerializer, UserLoginSerializer, CartItemSerializer
+from .serializers import UserSerializer, ProductSerializer, CartItemSerializer
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
 # 用户注册
-class RegisterView(APIView):
-    @swagger_auto_schema(
-            request_body=UserSerializer,
-            responses={
-                201: UserSerializer,
-                400: openapi.Response(
-                    description="Bad Request, with validation errors message for specific field",
-                    schema=openapi.Schema(
-                        type=openapi.TYPE_OBJECT,
-                        properties={
-                            'username': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
-                            'email': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
-                        }
-                    )
-                )
-            }
-    )
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class UserView(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(self, 'swagger_fake_view', False):
+            return User.objects.none()  # or any other logic for swagger fake view
+        if self.request.method == 'POST':
+            # allow to register
+            return User.objects.none()
+        if user.is_anonymous:
+            # raise with proper message provided by DRF
+            raise exceptions.NotAuthenticated
+        if user.is_superuser:
+            return User.objects.all()
+        return User.objects.filter(pk=user.pk)
 
 # 商品视图, readonly for users
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):

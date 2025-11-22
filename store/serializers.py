@@ -6,17 +6,18 @@ class UserSerializer(serializers.ModelSerializer):
     '''write only, exists for swagger doc for user register'''
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
+        fields = '__all__'
         extra_kwargs = {'password': {'write_only': True}}
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
-
-class UserLoginSerializer(serializers.ModelSerializer):
-    '''readonly, exists for swagger doc'''
-    class Meta:
-        model = User
-        fields = ['username', 'password']
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        if password is not None:
+            # We've `pop` above
+            #validated_data['password'] = make_password(password)
+            instance.set_password(password)
+        return super().update(instance, validated_data)
 
 # 商品序列化器
 class ProductSerializer(serializers.ModelSerializer):

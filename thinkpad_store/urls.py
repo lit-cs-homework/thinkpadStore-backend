@@ -24,7 +24,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from store.views import RegisterView, LoginView, ProductViewSet, CartViewSet, product_images_url
+from store.views import UserView, LoginView, ProductViewSet, CartViewSet, product_images_url
 
 DOC_CACHE_TIMEOUT = 0 # 60 * 60  # 1 hour
 schema_view = get_schema_view(
@@ -42,10 +42,10 @@ schema_view = get_schema_view(
 router = DefaultRouter()
 router.register('product', ProductViewSet, basename='product')
 router.register('cart', CartViewSet, basename='cart')
+router.register('user', UserView, basename='user')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('login/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include(router.urls)),
