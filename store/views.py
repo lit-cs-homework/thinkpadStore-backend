@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, Product, CartItem, product_images_url
+from .models import User, Product, CartItem, Cart, product_images_url
 from .serializers import UserSerializer, ProductSerializer, UserLoginSerializer, CartItemSerializer
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -47,7 +47,7 @@ class CartViewSet(viewsets.ModelViewSet):
         return CartItem.objects.filter(cart__user=self.request.user.pk)
     
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(cart=Cart.objects.get(user=self.request.user))
 
 # JWT 登录视图
 class LoginView(APIView):
