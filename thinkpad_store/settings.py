@@ -35,6 +35,9 @@ ALLOWED_HOSTS = [
     '10.140.33.49',
 ] + (os.getenv('DJANGO_ALLOWED_HOSTS') or '').split(',')
 
+CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOWED_ORIGIN_REGEXES = [] + (os.getenv('DJANGO_CORS_ALLOWED_ORIGIN_REGEXES') or '').split(',')
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -46,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
     'drf_yasg',
     'thinkpad_store',
     'store',
@@ -61,6 +65,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',  # We use JWT, so disable CSRF
     'django.contrib.auth.middleware.AuthenticationMiddleware',
