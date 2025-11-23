@@ -8,7 +8,7 @@ class StoreConfig(AppConfig):
     name = 'store'
 
     def ready(self):
-        from .models import Product, deleted_product_image_url as deleted_image_url
+        from .models import deleted_product_image_url as deleted_image_url
         # Ensure the deleted product image exists
         if not os.path.exists(deleted_image_url):
             # Create a simple image with text "Deleted Product"
@@ -19,6 +19,4 @@ class StoreConfig(AppConfig):
     <!--unicode entity of Trash emoji-->&#x1F5D1;&#xFE0F; Deleted Product
   </text>
 </svg>""")
-        if not Product.exists_deleted_placeholder():
-            Product.objects.create(**Product._DELETED_ONES_ATTRS)
         return super().ready()

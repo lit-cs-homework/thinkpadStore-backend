@@ -64,12 +64,12 @@ class Product(models.Model):
     )
     _DELETED_ONES_ATTRS = dict(**_DELETED_ONES_UNIQUE_ATTRS,
         price=0.0, stock=0,
-        description="This product has been deleted.",
+        description="This kind was deleted by provider.",
         image=deleted_product_image_url,
     )
     @classmethod
     def get_placeholder_for_deleted(cls):
-        return cls.objects.get(**cls._DELETED_ONES_UNIQUE_ATTRS)
+        return cls.objects.get_or_create(**cls._DELETED_ONES_UNIQUE_ATTRS)[0]
 
     # Override the delete method to remove the image file
     def delete(self, *args, **kwargs):
