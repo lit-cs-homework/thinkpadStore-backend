@@ -20,9 +20,17 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    images = serializers.ListField(
+        #XXX: as view is read-only, the serializer is not implemented for write
+        child=serializers.URLField(),
+        required=True,
+        min_length=0,
+    )
+
     class Meta:
         model = Product
-        fields = '__all__'
+        #fields = '__all__'
+        exclude = ['images_max_ord']
 
 class CartItemSerializer(serializers.ModelSerializer):
     total_price = serializers.ReadOnlyField()

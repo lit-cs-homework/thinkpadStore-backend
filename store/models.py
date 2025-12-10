@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models, transaction
 from django.utils.text import slugify
+from django.core.files.storage import default_storage
 
 
 class User(AbstractUser):
@@ -24,10 +25,27 @@ deleted_product_image_url = product_images_url + 'deleted_product_na.svg'
 def product_image_upload_path(instance, filename):
     """
     Generate a unique file path for the product image based on the product's name and model.
+    This will always append an index into the filename to avoid collisions and make
+    it easy to track image ordering.
+    """
+    # delegate to the filename helper which can compute the index when needed
+    return product_image_filename(instance, filename, index=None)
+
+
+def product_image_filename(instance, filename, index=None):
+    """Build the filename for a product image and ensure an index is appended.
+
+    If index is not None, append it to the filename.
     """
     _, file_extension = os.path.splitext(filename)
     # Use slugify to create a safe filename
     safe_name = slugify(instance.get_unique_identifier())
+    # derive index if not provided
+    if index is None:
+        #current_images = len(list(current_images)) + 1
+        pass
+    else:
+        safe_name += '_' + str(index)
     return product_images_url + f"{safe_name}{file_extension}"
 
 class ProductManager(models.Manager):
@@ -41,6 +59,8 @@ class Product(models.Model):
     description = models.TextField()
     stock = models.PositiveIntegerField()
     image = models.FileField(upload_to=product_image_upload_path)
+    images = models.JSONField(default=list)
+    images_max_ord = models.PositiveIntegerField(default=0)
 
     # ensure the deleted placeholder is not in normal queries
     _objects_ = models.Manager()  # The default manager.
@@ -58,6 +78,45 @@ class Product(models.Model):
     def get_unique_identifier(self):
         return f"{self.name}_{self.model}"
 
+    def add_images(self, uploaded_files):
+        """Save an uploaded file to storage using the same upload path logic and
+        append the stored path to the images list.
+        uploaded_file should be an UploadedFile or file-like object with a .name attribute.
+        Returns the stored path (name) of the saved file.
+        """
+        # compute the next index explicitly so filenames are sequential
+        imgs = self.images
+        # XXX: the logic below is simple:
+        #  for [1, 2, 4], cur_ord is still 4
+        #   this works because default_storage.save will auto rename,
+        #   by adding suffix consisted of random alpha
+        cur_ord = self.images_max_ord + 1
+        for cur_ord, uploaded_file in enumerate(uploaded_files, start=cur_ord):
+            filename = product_image_filename(self, uploaded_file.name, index=cur_ord)
+            saved_name = default_storage.save(filename, uploaded_file)
+            imgs.append(saved_name)
+        self.images_max_ord = cur_ord
+        self.save(update_fields=['images', 'images_max_ord'])
+
+    def remove_images(self, paths):
+        """Remove an image path from this product and delete the file from storage."""
+        imgs = self.images
+        hi = self.images_max_ord - 1
+        for path in paths:
+            if path not in imgs: continue
+            default_storage.delete(path)
+            i = imgs.index(path)
+            del imgs[i]
+            #imgs.remove(path)
+            if i == hi:
+                hi -= 1
+        self.images_max_ord = hi + 1
+        self.save(update_fields=['images', 'images_max_ord'])
+
+    def list_images(self):
+        """Return the list of stored image paths for this product."""
+        return self.images
+
     _DELETED_ONES_UNIQUE_ATTRS = dict(
         name="(Deleted Product)",
         model="N/A",
@@ -73,7 +132,15 @@ class Product(models.Model):
 
     # Override the delete method to remove the image file
     def delete(self, *args, **kwargs):
+        # delete primary image file
         self.image.delete(save=False) # if `save` this line, recsursive loop
+        # delete additional images stored as paths
+        for img_path in list(self.images):
+            try:
+                default_storage.delete(img_path)
+            except Exception:
+                # best-effort deletion
+                pass
         # this will also `save`
         super().delete(*args, **kwargs)
 
