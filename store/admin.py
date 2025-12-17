@@ -1,4 +1,5 @@
 import os
+import io, csv
 from django.contrib import admin
 from .models import User, Product, Cart, DiscountPromotion
 from .models import CartItem
@@ -28,6 +29,11 @@ class MultipleFileField(forms.FileField):
             result = [single_file_clean(data, initial)]
         return result
 
+
+class EquipmentCSVWidget(forms.Textarea):
+    """Simple multiline textarea for CSV input (no header). Each line: name,extra_price"""
+    pass
+
 class ProductAdminForm(forms.ModelForm):
     new_images = MultipleFileField(
         required=False,
@@ -40,10 +46,16 @@ class ProductAdminForm(forms.ModelForm):
         label='Delete existing images',
         help_text='Select images to delete.'
     )
+    equipments_csv = forms.CharField(
+        required=False,
+        widget=EquipmentCSVWidget(attrs={'rows': 6}),
+        label='equipements',
+        help_text='Each line: name,extra_price (CSV without header)'
+    )
 
     class Meta:
         model = Product
-        exclude = ['images', 'images_max_ord']
+        exclude = ['images', 'images_max_ord', 'equipments']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,8 +65,44 @@ class ProductAdminForm(forms.ModelForm):
             self.fields['existing_images'].choices = [
                 (img, os.path.basename(img)) for img in images
             ]
+            # populate equipments_csv with current equipments
+            eqs = self.instance.equipments
+            lines = []
+            for e in eqs:
+                name = e['name']
+                extra_price = e['extra_price']
+                # ensure commas in values are preserved minimally by not altering
+                lines.append(f"{name},{extra_price}")
+            self.fields['equipments_csv'].initial = '\n'.join(lines)
         else:
             self.fields['existing_images'].choices = []
+            self.fields['equipments_csv'].initial = ''
+
+    def clean_equipments_csv(self):
+        eq_csv = self.cleaned_data.get('equipments_csv', '')
+        f = io.StringIO(eq_csv)
+        reader = csv.reader(f)
+        normalized = []
+        for index, row in enumerate(reader):
+            if not row:
+                continue
+            if len(row) != 2:
+                raise forms.ValidationError(f'bad line {index + 1}: ' "Each equipment line must have exactly two values: name and extra_price.")
+            name = row[0].strip()
+            s_price = row[1].strip()
+            try:
+                _ = float(s_price)
+            except ValueError:
+                raise forms.ValidationError(f'bad line {index + 1}: "Price must be a valid number."')
+            normalized.append({'name': name, 'extra_price': s_price})
+        return normalized
+    
+    def clean(self):
+        obj = self.instance
+        obj.equipments = self.cleaned_data.get('equipments_csv')
+        #obj.save(update_fields=['equipments'])
+        return super().clean()
+
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):

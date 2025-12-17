@@ -61,6 +61,9 @@ class Product(models.Model):
     image = models.FileField(upload_to=product_image_upload_path)
     images = models.JSONField(default=list)
     images_max_ord = models.PositiveIntegerField(default=0)
+    equipments = models.JSONField(default=list, verbose_name='配置')
+
+    
 
     # ensure the deleted placeholder is not in normal queries
     _objects_ = models.Manager()  # The default manager.
@@ -117,6 +120,31 @@ class Product(models.Model):
         """Return the list of stored image paths for this product."""
         return self.images
 
+    # Equipments helpers
+    def list_equipments(self):
+        """Return the list of equipments. Each item is a dict with 'name' and 'price'."""
+        return self.equipments or []
+
+    def add_equipment(self, name: str, price):
+        eqs = self.list_equipments()
+        eqs.append({'name': name, 'price': str(price)})
+        self.equipments = eqs
+        self.save(update_fields=['equipments'])
+
+    def remove_equipment_by_name(self, name: str):
+        eqs = [e for e in self.list_equipments() if e.get('name') != name]
+        self.equipments = eqs
+        self.save(update_fields=['equipments'])
+
+    def equipments_total_price(self):
+        total = 0
+        for e in self.list_equipments():
+            try:
+                total += float(e.get('price', 0))
+            except Exception:
+                pass
+        return total
+
     _DELETED_ONES_UNIQUE_ATTRS = dict(
         name="(Deleted Product)",
         model="N/A",
@@ -125,6 +153,7 @@ class Product(models.Model):
         price=0.0, stock=0,
         description="This kind was deleted by provider.",
         image=deleted_product_image_url,
+        equipments=[],
     )
     @classmethod
     def get_placeholder_for_deleted(cls):

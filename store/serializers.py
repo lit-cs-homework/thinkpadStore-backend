@@ -19,10 +19,21 @@ class UserSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class EquipmentChildSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    extra_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+
 class ProductSerializer(serializers.ModelSerializer):
+    
+    # XXX: the following field is read-only, so no need to implement write logic
+    #  just for swagger doc
     images = serializers.ListField(
-        #XXX: as view is read-only, the serializer is not implemented for write
         child=serializers.URLField(),
+        required=True,
+        min_length=0,
+    )
+    equipments = serializers.ListField(
+        child=EquipmentChildSerializer(),
         required=True,
         min_length=0,
     )
