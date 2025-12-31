@@ -25,6 +25,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from store.views import UserView, LoginView, ProductViewSet, CartViewSet, product_images_url
+from store.assistant import AssistantChatView
 
 DOC_CACHE_TIMEOUT = 0 # 60 * 60  # 1 hour
 schema_view = get_schema_view(
@@ -48,6 +49,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', LoginView.as_view(), name='login'),
     path('login/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('assistant/chat/', AssistantChatView.as_view(), name='assistant_chat'),
     path('', include(router.urls)),
 ] + [
     # drf-yasg auto-generate OpenAPI JSON and UI

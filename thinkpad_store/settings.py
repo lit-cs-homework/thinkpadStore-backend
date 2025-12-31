@@ -60,6 +60,11 @@ REST_FRAMEWORK = {
   'DEFAULT_AUTHENTICATION_CLASSES': (
     'rest_framework_simplejwt.authentication.JWTAuthentication',
   ),
+    # Throttle rates are only applied if a view sets throttle_classes.
+    'DEFAULT_THROTTLE_RATES': {
+        # Cost-control for anonymous chat; authenticated users share the same scope.
+        'assistant_chat': os.getenv('ASSISTANT_CHAT_RATE', '10/min'),
+    },
 }
 
 MIDDLEWARE = [
