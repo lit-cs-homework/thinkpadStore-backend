@@ -170,11 +170,10 @@ class Product(models.Model):
             except Exception:
                 # best-effort deletion
                 pass
-        # this will also `save`
-        super().delete(*args, **kwargs)
-
         with transaction.atomic():
             CartItem.handle_product_deletion(self)
+        # this will also `save`
+        super().delete(*args, **kwargs)
 
     # no need to override the save method to delete the old image file when updating
     #  as with `product_image_upload_path` and `unique_together`,
