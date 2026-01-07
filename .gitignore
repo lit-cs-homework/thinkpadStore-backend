@@ -3,9 +3,9 @@ __pycache__/
 /product_images/
 
 lx_back_env/
-__pycache__/
-*.pyc
 .env
 *.log
 .vscode/
-*.md
+/staticfiles/
+/venv/
+.env
